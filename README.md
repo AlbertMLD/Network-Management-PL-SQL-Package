@@ -66,4 +66,4 @@ If you find issues or have suggestions for improvement, feel free to contribute 
 
 ## License
 
-This code is licensed under the [MIT License](LICENSE).
+This code is licensed under the [AlbertMLD License](LICENSE).
