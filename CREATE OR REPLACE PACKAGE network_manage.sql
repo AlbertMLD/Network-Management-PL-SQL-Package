@@ -455,7 +455,6 @@ CREATE OR REPLACE PACKAGE BODY network_management AS
                 REFERENCES network_devices(device_id)
                 ON DELETE CASCADE
             ';
-
             -- Create foreign key between network_logs and network_devices
             EXECUTE IMMEDIATE '
                 ALTER TABLE network_logs
@@ -464,7 +463,6 @@ CREATE OR REPLACE PACKAGE BODY network_management AS
                 REFERENCES network_devices(device_id)
                 ON DELETE CASCADE
             ';
-
             -- Create foreign key between network_logs and network_interfaces
             EXECUTE IMMEDIATE '
                 ALTER TABLE network_logs
@@ -473,7 +471,6 @@ CREATE OR REPLACE PACKAGE BODY network_management AS
                 REFERENCES network_interfaces(interface_id)
                 ON DELETE CASCADE
             ';
-
             -- Create foreign key between alerte_trafic and trafic_interfete
             EXECUTE IMMEDIATE '
                 ALTER TABLE alerte_trafic
@@ -482,7 +479,6 @@ CREATE OR REPLACE PACKAGE BODY network_management AS
                 REFERENCES trafic_interfete(interfata_id)
                 ON DELETE CASCADE
             ';
-
             -- Additional foreign keys can be added for other tables as needed.
             -- For example, you can extend the procedure to add foreign keys for network_logs, network_logs, etc.
         END create_foreign_keys;
