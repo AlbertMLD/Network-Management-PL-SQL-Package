@@ -6,6 +6,7 @@ CREATE OR REPLACE PACKAGE network_management AS
     PROCEDURE setup_audit_triggers(p_table_name VARCHAR2);
     PROCEDURE simulate_traffic_and_alerts;
     PROCEDURE create_and_insert_network_logs;
+    PROCEDURE create_foreign_keys;
 END network_management;
 /
 CREATE OR REPLACE PACKAGE BODY network_management AS
@@ -444,5 +445,46 @@ CREATE OR REPLACE PACKAGE BODY network_management AS
             END LOOP;
             COMMIT; -- Commit the changes
         END create_and_insert_network_logs;
+    PROCEDURE create_foreign_keys AS
+        BEGIN
+            -- Create foreign key between network_interfaces and network_devices
+            EXECUTE IMMEDIATE '
+                ALTER TABLE network_interfaces
+                ADD CONSTRAINT fk_device_id
+                FOREIGN KEY (device_id)
+                REFERENCES network_devices(device_id)
+                ON DELETE CASCADE
+            ';
+
+            -- Create foreign key between network_logs and network_devices
+            EXECUTE IMMEDIATE '
+                ALTER TABLE network_logs
+                ADD CONSTRAINT fk_device_id_logs
+                FOREIGN KEY (device_id)
+                REFERENCES network_devices(device_id)
+                ON DELETE CASCADE
+            ';
+
+            -- Create foreign key between network_logs and network_interfaces
+            EXECUTE IMMEDIATE '
+                ALTER TABLE network_logs
+                ADD CONSTRAINT fk_interface_id
+                FOREIGN KEY (interface_id)
+                REFERENCES network_interfaces(interface_id)
+                ON DELETE CASCADE
+            ';
+
+            -- Create foreign key between alerte_trafic and trafic_interfete
+            EXECUTE IMMEDIATE '
+                ALTER TABLE alerte_trafic
+                ADD CONSTRAINT fk_interfata_id
+                FOREIGN KEY (interfata_id)
+                REFERENCES trafic_interfete(interfata_id)
+                ON DELETE CASCADE
+            ';
+
+            -- Additional foreign keys can be added for other tables as needed.
+            -- For example, you can extend the procedure to add foreign keys for network_logs, network_logs, etc.
+        END create_foreign_keys;
 END network_management;
 /
