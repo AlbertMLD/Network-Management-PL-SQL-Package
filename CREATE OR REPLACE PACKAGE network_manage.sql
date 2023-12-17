@@ -1,14 +1,32 @@
 CREATE OR REPLACE PACKAGE network_management AS
-    PROCEDURE create_network_devices_table;
+    PROCEDURE create_network_devices_table AS
+        BEGIN
+            BEGIN
+                EXECUTE IMMEDIATE 'CREATE TABLE network_devices (
+                    device_id INT PRIMARY KEY,
+                    device_name VARCHAR2(50),
+                    device_ip_address VARCHAR2(15),
+                    device_type VARCHAR2(20),
+                    location VARCHAR2(50),
+                    manufacturer VARCHAR2(50),
+                    firmware_version VARCHAR2(10),
+                    status VARCHAR2(10),
+                    last_seen TIMESTAMP
+                )';
+            EXCEPTION
+                WHEN OTHERS THEN
+                    NULL; -- Tabela deja existentă, ignorăm eroarea
+            END;
+        END;
     PROCEDURE add_device(
         p_device_id INT,
-        p_device_name VARCHAR2,
-        p_device_ip_address VARCHAR2,
-        p_device_type VARCHAR2,
-        p_location VARCHAR2,
-        p_manufacturer VARCHAR2,
-        p_firmware_version VARCHAR2,
-        p_status VARCHAR2,
+        p_device_name VARCHAR2(50),
+        p_device_ip_address VARCHAR2(15),
+        p_device_type VARCHAR2(20),
+        p_location VARCHAR2(50),
+        p_manufacturer VARCHAR2(50),
+        p_firmware_version VARCHAR2(10),
+        p_status VARCHAR2(10),
         p_last_seen TIMESTAMP
     );
     PROCEDURE delete_device(p_device_id INT) AS
@@ -20,15 +38,25 @@ CREATE OR REPLACE PACKAGE network_management AS
     -- Adăugarea datelor aleatorii în pachetul network_management
 
     -- Inserarea datelor în tabela network_devices
-            INSERT INTO network_devices (device_id, device_name, device_ip_address, device_type, location, manufacturer, firmware_version, status, last_seen)
+            INSERT INTO network_devices (
+                device_id,
+                device_name,
+                device_ip_address,
+                device_type,
+                location,
+                manufacturer,
+                firmware_version,
+                status,
+                last_seen
+            )
             SELECT
                 LEVEL,
                 'Device' || LEVEL,
-                '192.168.' || TO_CHAR(DBMS_RANDOM.VALUE(1, 255)) || '.' || TO_CHAR(DBMS_RANDOM.VALUE(1, 255)),
+                '192.168.' || TO_CHAR(TRUNC(DBMS_RANDOM.VALUE(1, 255))) || '.' || TO_CHAR(TRUNC(DBMS_RANDOM.VALUE(1, 255))),
                 CASE WHEN DBMS_RANDOM.VALUE < 0.5 THEN 'Router' ELSE 'Switch' END,
                 CASE WHEN DBMS_RANDOM.VALUE < 0.5 THEN 'Server Room' ELSE 'Network Closet' END,
                 'Manufacturer' || LEVEL,
-                'v' || TO_CHAR(DBMS_RANDOM.VALUE(1, 10)),
+                SUBSTR('v' || TO_CHAR(DBMS_RANDOM.VALUE(1, 10)), 1, 10), -- Ensure firmware_version does not exceed 10 characters
                 CASE WHEN DBMS_RANDOM.VALUE < 0.8 THEN 'Active' ELSE 'Inactive' END,
                 TO_TIMESTAMP('2023-01-01 09:12', 'YYYY-MM-DD HH24:MI') - DBMS_RANDOM.VALUE(1, 365)
             FROM DUAL
