@@ -40,12 +40,12 @@ This PL/SQL package provides functionalities for managing network devices, inter
 
 The package creates the following tables:
 
-- `network_devices`: Stores information about network devices.
-- `network_interfaces`: Stores information about network interfaces.
-- `audit_logs`: Logs actions (insert, update, delete) on specified tables.
-- `trafic_interfete`: Stores simulated network traffic data.
-- `alerte_trafic`: Stores alerts generated based on simulated traffic conditions.
-- `network_logs`: Stores network log data.
+- `network_devices`: device_id, device_name, device_ip_address, device_type, location, manufacturer, firmware_version, status, last_seen - (Stores information about network devices).
+- `network_interfaces`: interface_id, device_id, interface_name, interface_type, speed_mbps, mac_address - (Stores information about network interfaces).
+- `audit_logs`: audit_id, administrator_id, timestamp, action_type, table_affected, record_id, details - (Logs actions (insert, update, delete) on specified tables).
+- `trafic_interfete`: interfata_id, nume_interfata, trafic_in_10G, trafic_out_10G, trafic_in_40G, trafic_out_40G, trafic_in_100G, trafic_out_100G, timestamp - (Stores simulated network traffic data).
+- `alerte_trafic`: alerta_id, interfata_id, nume_interfata, tip_alerta, timestamp - (Stores alerts generated based on simulated traffic conditions).
+- `network_logs`: log_id, device_id , interface_id, timestamp, log_message, log_level, source_ip - (Stores network log data).
 
 ## Security Considerations
 
