@@ -157,18 +157,17 @@ CREATE OR REPLACE PACKAGE BODY network_management AS
                 status,
                 last_seen
             )
-            SELECT
-                LEVEL,
-                'Device' || LEVEL,
+            VALUES (
+                i,
+                'Device' || i,
                 '192.168.' || TO_CHAR(TRUNC(DBMS_RANDOM.VALUE(1, 255))) || '.' || TO_CHAR(TRUNC(DBMS_RANDOM.VALUE(1, 255))),
                 CASE WHEN DBMS_RANDOM.VALUE < 0.5 THEN 'Router' ELSE 'Switch' END,
                 CASE WHEN DBMS_RANDOM.VALUE < 0.5 THEN 'Server Room' ELSE 'Network Closet' END,
-                'Manufacturer' || LEVEL,
+                'Manufacturer' || i,
                 SUBSTR('v' || TO_CHAR(DBMS_RANDOM.VALUE(1, 10)), 1, 10),
                 CASE WHEN DBMS_RANDOM.VALUE < 0.8 THEN 'Active' ELSE 'Inactive' END,
                 TO_TIMESTAMP('2023-01-01 09:12', 'YYYY-MM-DD HH24:MI') - DBMS_RANDOM.VALUE(1, 365)
-            FROM DUAL
-            CONNECT BY LEVEL <= 10;
+            );
         END LOOP;
         COMMIT;
     END insert_network_devices;
@@ -513,9 +512,6 @@ END add_device;
 END network_management;
 /
 
--- Insert sample data into network_devices table
-EXEC network_management.insert_network_devices;
-
 -- Insert sample data into network_interfaces table
 EXEC network_management.insert_network_interfaces;
 
@@ -528,6 +524,9 @@ EXEC network_management.simulate_traffic_and_alerts;
 -- Insert sample data into network_logs table
 EXEC network_management.insert_network_logs;
 
-
 desc network_logs
+desc network_devices
+select * from network_devices
 select * from network_logs
+select * from network_interfaces
+select * from trafic_interfete
