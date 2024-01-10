@@ -512,3 +512,22 @@ END add_device;
     END insert_network_logs;
 END network_management;
 /
+
+-- Insert sample data into network_devices table
+EXEC network_management.insert_network_devices;
+
+-- Insert sample data into network_interfaces table
+EXEC network_management.insert_network_interfaces;
+
+-- Delete the sample device added earlier
+EXEC network_management.delete_device(p_device_id => 11);
+
+-- Simulate traffic and generate alerts
+EXEC network_management.simulate_traffic_and_alerts;
+
+-- Insert sample data into network_logs table
+EXEC network_management.insert_network_logs;
+
+
+desc network_logs
+select * from network_logs
