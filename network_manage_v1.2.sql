@@ -552,7 +552,7 @@ BEGIN
         p_administrator_id => 1, -- Replace with the actual administrator_id
         p_device_id => 101,
         p_device_name => 'New Device',
-        p_device_ip_address => '192.168.1.100',
+        p_device_ip_address => '192.168.100.100',
         p_device_type => 'Router',
         p_location => 'Data Center',
         p_manufacturer => 'New Manufacturer',
@@ -566,3 +566,173 @@ END;
 SELECT * FROM USER_TRIGGERS WHERE TABLE_NAME = 'NETWORK_DEVICES';
 SELECT * FROM USER_ERRORS WHERE NAME = 'AUDIT_LOGS_INSERT_TRIGGER';
 SELECT * FROM audit_logs;
+
+--20 logic and complex queries that you can use to demonstrate that the code is working:
+
+--List all active devices in the "Server Room" location:
+SELECT * FROM network_devices WHERE status = 'Active' AND location = 'Server Room';
+
+--Find devices with the highest firmware version:
+SELECT * FROM network_devices WHERE firmware_version = (SELECT MAX(firmware_version) FROM network_devices);
+
+--List devices with their total traffic across all interfaces:
+SELECT
+    d.device_id, 
+    d.device_name, 
+    d.device_ip_address, 
+    d.device_type, 
+    d.location, 
+    d.manufacturer, 
+    d.firmware_version, 
+    d.status, 
+    d.last_seen,
+    SUM(t.trafic_in_10G + t.trafic_out_10G + t.trafic_in_40G + t.trafic_out_40G + t.trafic_in_100G + t.trafic_out_100G) AS total_traffic
+FROM
+    network_devices d
+LEFT JOIN
+    trafic_interfete t ON d.device_id = t.interfata_id
+GROUP BY
+    d.device_id, 
+    d.device_name, 
+    d.device_ip_address, 
+    d.device_type, 
+    d.location, 
+    d.manufacturer, 
+    d.firmware_version, 
+    d.status, 
+    d.last_seen
+ORDER BY
+    total_traffic DESC;
+
+--Show devices that have not been seen in the last 30 days:
+SELECT * FROM network_devices WHERE last_seen < SYSTIMESTAMP - INTERVAL '30' DAY;
+
+--Display interfaces with a speed greater than 5000 Mbps:
+SELECT * FROM network_interfaces WHERE speed_mbps > 5000;
+
+--List devices and their logs with the highest log level:
+SELECT d.*, l.*
+FROM network_devices d
+JOIN network_logs l ON d.device_id = l.device_id
+WHERE l.log_level = (SELECT MAX(log_level) FROM network_logs);
+
+--Retrieve devices with no associated logs:
+SELECT * FROM network_devices WHERE device_id NOT IN (SELECT DISTINCT device_id FROM network_logs);
+
+--Display the latest log for each device:
+SELECT d.*, l.*
+FROM network_devices d
+JOIN network_logs l ON d.device_id = l.device_id
+WHERE (l.device_id, l.timestamp) IN (
+    SELECT device_id, MAX(timestamp)
+    FROM network_logs
+    GROUP BY device_id
+);
+
+--Find devices and their logs with a specific source IP:
+SELECT d.*, l.*
+FROM network_devices d
+JOIN network_logs l ON d.device_id = l.device_id
+WHERE l.source_ip = '192.168.54.205';
+
+--Show devices and their total traffic (in + out) for the last 7 days:
+SELECT
+    d.device_id,
+    d.device_name,
+    d.device_ip_address,
+    d.device_type,
+    d.location,
+    d.manufacturer,
+    d.firmware_version,
+    d.status,
+    d.last_seen,
+    SUM(t.trafic_in_10G + t.trafic_out_10G + t.trafic_in_40G + t.trafic_out_40G + t.trafic_in_100G + t.trafic_out_100G) AS total_traffic
+FROM
+    network_devices d
+JOIN
+    trafic_interfete t ON d.device_id = t.interfata_id
+WHERE
+    t.timestamp >= SYSTIMESTAMP - INTERVAL '7' DAY
+GROUP BY
+    d.device_id,
+    d.device_name,
+    d.device_ip_address,
+    d.device_type,
+    d.location,
+    d.manufacturer,
+    d.firmware_version,
+    d.status,
+    d.last_seen
+ORDER BY
+    total_traffic DESC;
+
+--Find interfaces with the highest traffic in the last hour:
+SELECT t.*, d.device_name, d.location
+FROM trafic_interfete t
+JOIN network_devices d ON t.interfata_id = d.device_id
+WHERE t.timestamp >= SYSTIMESTAMP - INTERVAL '1' HOUR
+ORDER BY GREATEST(t.trafic_in_10G, t.trafic_out_10G, t.trafic_in_40G, t.trafic_out_40G, t.trafic_in_100G, t.trafic_out_100G) DESC;
+
+--Display devices and their logs with details containing "Error":
+SELECT d.*, l.*
+FROM network_devices d
+JOIN network_logs l ON d.device_id = l.device_id
+WHERE l.log_message LIKE '%1%';
+
+--Show devices with no associated logs in the last 30 days:
+SELECT * FROM network_devices d
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM network_logs l
+    WHERE l.device_id = d.device_id
+    AND l.timestamp >= SYSTIMESTAMP - INTERVAL '30' DAY
+);
+
+--Retrieve interfaces with their alerts:
+SELECT a.*, t.nume_interfata
+FROM alerte_trafic a
+JOIN trafic_interfete t ON a.interfata_id = t.interfata_id;
+
+--Show devices and their administrators:
+SELECT d.*, a.administrator_id
+FROM network_devices d
+LEFT JOIN alerte_trafic a ON d.device_id = a.interfata_id;
+
+--Display interfaces with the highest speed for each device:
+SELECT device_id, MAX(speed_mbps) AS max_speed
+FROM network_interfaces
+GROUP BY device_id;
+
+--List interfaces with traffic in the last hour, ordered by the highest traffic:
+SELECT t.*, d.device_name
+FROM trafic_interfete t
+JOIN network_devices d ON t.interfata_id = d.device_id
+WHERE t.timestamp >= SYSTIMESTAMP - INTERVAL '1' HOUR
+ORDER BY GREATEST(t.trafic_in_10G, t.trafic_out_10G, t.trafic_in_40G, t.trafic_out_40G, t.trafic_in_100G, t.trafic_out_100G) DESC;
+
+--Find devices with firmware version starting with 'v1':
+SELECT *
+FROM network_devices
+WHERE firmware_version LIKE 'v1%';
+
+--Retrieve interfaces with the highest percentage of traffic increase from the previous hour:
+SELECT
+    t.*,
+    CASE
+        WHEN prev.prev_traffic = 0 THEN NULL
+        ELSE ROUND(((t.trafic_in_10G + t.trafic_out_10G + t.trafic_in_40G + t.trafic_out_40G + t.trafic_in_100G + t.trafic_out_100G) - prev.prev_traffic) / prev.prev_traffic * 100, 2)
+    END AS traffic_increase_percentage
+FROM
+    trafic_interfete t
+JOIN (
+    SELECT
+        interfata_id,
+        MAX(timestamp) AS prev_timestamp,
+        SUM(trafic_in_10G + trafic_out_10G + trafic_in_40G + trafic_out_40G + trafic_in_100G + trafic_out_100G) AS prev_traffic
+    FROM
+        trafic_interfete
+    WHERE
+        timestamp >= SYSTIMESTAMP - INTERVAL '1' HOUR
+    GROUP BY
+        interfata_id
+) prev ON t.interfata_id = prev.interfata_id AND t.timestamp = prev.prev_timestamp;
