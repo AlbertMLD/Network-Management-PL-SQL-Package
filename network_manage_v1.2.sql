@@ -512,6 +512,12 @@ END add_device;
 END network_management;
 /
 
+-- Create Tables Procedure
+EXEC create_tables_procedure;
+
+-- Insert sample data into network_devices table
+EXEC network_management.insert_network_devices;
+
 -- Insert sample data into network_interfaces table
 EXEC network_management.insert_network_interfaces;
 
@@ -524,9 +530,37 @@ EXEC network_management.simulate_traffic_and_alerts;
 -- Insert sample data into network_logs table
 EXEC network_management.insert_network_logs;
 
-desc network_logs
-desc network_devices
-select * from network_devices
-select * from network_logs
-select * from network_interfaces
-select * from trafic_interfete
+-- Display table structures
+DESC network_devices;
+DESC network_interfaces;
+DESC network_logs;
+DESC trafic_interfete;
+DESC alerte_trafic;
+DESC audit_logs;
+
+-- Display sample data
+SELECT * FROM network_devices;
+SELECT * FROM network_interfaces;
+SELECT * FROM network_logs;
+SELECT * FROM trafic_interfete;
+SELECT * FROM alerte_trafic;
+SELECT * FROM audit_logs;
+
+-- Anonymous PL/SQL block to call the procedure
+BEGIN
+    network_management.add_device(
+        p_device_id => 101,
+        p_device_name => 'New Device',
+        p_device_ip_address => '192.168.1.100',
+        p_device_type => 'Router',
+        p_location => 'Data Center',
+        p_manufacturer => 'New Manufacturer',
+        p_firmware_version => 'v1.0',
+        p_status => 'Active',
+        p_last_seen => TO_TIMESTAMP(SYSTIMESTAMP)
+    );
+END;
+/
+    
+-- Set up audit triggers for the network_devices table
+EXEC network_management.setup_audit_triggers(p_table_name => 'network_devices');
