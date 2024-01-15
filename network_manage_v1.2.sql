@@ -1,3 +1,26 @@
+CREATE OR REPLACE PACKAGE network_management AS
+    PROCEDURE create_tables_procedure;
+    PROCEDURE insert_network_devices;
+    PROCEDURE add_device(
+        p_administrator_id INT,
+        p_device_id INT,
+        p_device_name VARCHAR2,
+        p_device_ip_address VARCHAR2,
+        p_device_type VARCHAR2,
+        p_location VARCHAR2,
+        p_manufacturer VARCHAR2,
+        p_firmware_version VARCHAR2,
+        p_status VARCHAR2,
+        p_last_seen TIMESTAMP
+    );
+    PROCEDURE insert_network_interfaces;
+    PROCEDURE delete_device(p_device_id INT);
+    PROCEDURE setup_audit_triggers(p_table_name VARCHAR2);
+    PROCEDURE simulate_traffic_and_alerts;
+    PROCEDURE insert_network_logs;
+END network_management;
+/
+
 CREATE OR REPLACE PROCEDURE create_tables_procedure AS
 BEGIN
     BEGIN
@@ -104,44 +127,21 @@ END create_tables_procedure;
 
 EXEC create_tables_procedure;
 
-CREATE OR REPLACE PACKAGE network_management AS
-    PROCEDURE create_tables_procedure;
-    PROCEDURE insert_network_devices;
-    PROCEDURE add_device;
-    PROCEDURE insert_network_interfaces;
-    PROCEDURE delete_device;
-    PROCEDURE setup_audit_triggers;
-    PROCEDURE simulate_traffic_and_alerts;
-    PROCEDURE insert_network_logs;
-    PROCEDURE rest_of_procedures;
-END network_management;
-/
+ALTER TABLE network_devices ADD (administrator_id INT);
+ALTER TABLE network_interfaces ADD (administrator_id INT);
+ALTER TABLE network_logs ADD (administrator_id INT);
+ALTER TABLE trafic_interfete ADD (administrator_id INT);
+ALTER TABLE alerte_trafic ADD (administrator_id INT);
 
 CREATE SEQUENCE alerta_seq START WITH 1 INCREMENT BY 1;
 CREATE SEQUENCE audit_id_seq START WITH 1 INCREMENT BY 1;
 
-CREATE OR REPLACE PACKAGE network_management AS
-    PROCEDURE insert_network_devices;
-    PROCEDURE add_device(
-        p_device_id INT,
-        p_device_name VARCHAR2,
-        p_device_ip_address VARCHAR2,
-        p_device_type VARCHAR2,
-        p_location VARCHAR2,
-        p_manufacturer VARCHAR2,
-        p_firmware_version VARCHAR2,
-        p_status VARCHAR2,
-        p_last_seen TIMESTAMP
-    );
-    PROCEDURE insert_network_interfaces;
-    PROCEDURE delete_device(p_device_id INT);
-    PROCEDURE setup_audit_triggers(p_table_name VARCHAR2);
-    PROCEDURE simulate_traffic_and_alerts;
-    PROCEDURE insert_network_logs;
-END network_management;
-/
-
 CREATE OR REPLACE PACKAGE BODY network_management AS
+    PROCEDURE create_tables_procedure AS
+		BEGIN
+    		network_management.create_tables_procedure;
+		END create_tables_procedure;
+    
     PROCEDURE insert_network_devices IS
     BEGIN
         -- Insert Sample Data
@@ -173,6 +173,7 @@ CREATE OR REPLACE PACKAGE BODY network_management AS
     END insert_network_devices;
 
 PROCEDURE add_device(
+    p_administrator_id INT,
     p_device_id INT,
     p_device_name VARCHAR2,
     p_device_ip_address VARCHAR2,
@@ -186,7 +187,7 @@ PROCEDURE add_device(
 BEGIN
     BEGIN
         EXECUTE IMMEDIATE '
-            INSERT INTO network_devices VALUES (:1, :2, :3, :4, :5, :6, :7, :8, :9)
+            INSERT INTO network_devices VALUES (:1, :2, :3, :4, :5, :6, :7, :8, :9, :10)
         ' USING p_device_id,
             SUBSTR(p_device_name, 1, 50),
             SUBSTR(p_device_ip_address, 1, 15),
@@ -195,7 +196,8 @@ BEGIN
             SUBSTR(p_manufacturer, 1, 50),
             SUBSTR(p_firmware_version, 1, 10),
             SUBSTR(p_status, 1, 10),
-            p_last_seen;
+            p_last_seen,
+            p_administrator_id;
     EXCEPTION
         WHEN DUP_VAL_ON_INDEX THEN
             DBMS_OUTPUT.PUT_LINE('Error: Duplicate device_id ' || p_device_id);
@@ -204,7 +206,6 @@ BEGIN
             -- Handle other specific exceptions if needed
     END;
 END add_device;
-
 
     PROCEDURE insert_network_interfaces IS
     BEGIN
@@ -228,7 +229,7 @@ END add_device;
 
     PROCEDURE setup_audit_triggers(p_table_name VARCHAR2) IS
     BEGIN
-        -- Create sequence if not exists
+    -- Create sequence if not exists
         BEGIN
             EXECUTE IMMEDIATE 'CREATE SEQUENCE audit_id_seq START WITH 1 INCREMENT BY 1';
         EXCEPTION
@@ -236,81 +237,81 @@ END add_device;
                 NULL; -- Sequence already exists, ignore the error
         END;
 
-        -- Create a trigger to log inserts
-        EXECUTE IMMEDIATE '
-            CREATE OR REPLACE TRIGGER audit_logs_insert_trigger
-            AFTER INSERT ON ' || p_table_name || '
-            FOR EACH ROW
-            BEGIN
-                INSERT INTO audit_logs (
-                    audit_id,
-                    administrator_id,
-                    timestamp,
-                    action_type,
-                    table_affected,
-                    record_id,
-                    details
-                ) VALUES (
-                    audit_id_seq.NEXTVAL,
-                    :new.administrator_id,
-                    SYSTIMESTAMP,
-                    ''Insert'',
-                    ''' || p_table_name || ''',
-                    :new.record_id,
-                    ''{"action": "Insert"}''
-                );
-            END';
+    -- Create a trigger to log inserts
+    EXECUTE IMMEDIATE '
+        CREATE OR REPLACE TRIGGER audit_logs_insert_trigger
+        AFTER INSERT ON ' || p_table_name || '
+        FOR EACH ROW
+        BEGIN
+            INSERT INTO audit_logs (
+                audit_id,
+                administrator_id,
+                timestamp,
+                action_type,
+                table_affected,
+                record_id,
+                details
+            ) VALUES (
+                audit_id_seq.NEXTVAL,
+                :admin_id,
+                SYSTIMESTAMP,
+                ''Insert'',
+                ''' || p_table_name || ''',
+                :rec_id,
+                ''{"action": "Insert"}''
+            );
+        END';
 
-        -- Create a trigger to log updates
-        EXECUTE IMMEDIATE '
-            CREATE OR REPLACE TRIGGER audit_logs_update_trigger
-            AFTER UPDATE ON ' || p_table_name || '
-            FOR EACH ROW
-            BEGIN
-                INSERT INTO audit_logs (
-                    audit_id,
-                    administrator_id,
-                    timestamp,
-                    action_type,
-                    table_affected,
-                    record_id,
-                    details
-                ) VALUES (
-                    audit_id_seq.NEXTVAL,
-                    :new.administrator_id,
-                    SYSTIMESTAMP,
-                    ''Update'',
-                    ''' || p_table_name || ''',
-                    :new.record_id,
-                    ''{"action": "Update"}''
-                );
-            END';
+    -- Create a trigger to log updates
+    EXECUTE IMMEDIATE '
+        CREATE OR REPLACE TRIGGER audit_logs_update_trigger
+        AFTER UPDATE ON ' || p_table_name || '
+        FOR EACH ROW
+        BEGIN
+            INSERT INTO audit_logs (
+                audit_id,
+                administrator_id,
+                timestamp,
+                action_type,
+                table_affected,
+                record_id,
+                details
+            ) VALUES (
+                audit_id_seq.NEXTVAL,
+                :new.administrator_id,
+                SYSTIMESTAMP,
+                ''Update'',
+                ''' || p_table_name || ''',
+                :new.record_id,
+                ''{"action": "Update"}''
+            );
+        END';
 
-        -- Create a trigger to log deletes
-        EXECUTE IMMEDIATE '
-            CREATE OR REPLACE TRIGGER audit_logs_delete_trigger
-            BEFORE DELETE ON ' || p_table_name || '
-            FOR EACH ROW
-            BEGIN
-                INSERT INTO audit_logs (
-                    audit_id,
-                    administrator_id,
-                    timestamp,
-                    action_type,
-                    table_affected,
-                    record_id,
-                    details
-                ) VALUES (
-                    audit_id_seq.NEXTVAL,
-                    :old.administrator_id,
-                    SYSTIMESTAMP,
-                    ''Delete'',
-                    ''' || p_table_name || ''',
-                    :old.record_id,
-                    ''{"action": "Delete"}''
-                );
-            END';
-    END setup_audit_triggers;
+    -- Create a trigger to log deletes
+    EXECUTE IMMEDIATE '
+        CREATE OR REPLACE TRIGGER audit_logs_delete_trigger
+        BEFORE DELETE ON ' || p_table_name || '
+        FOR EACH ROW
+        BEGIN
+            INSERT INTO audit_logs (
+                audit_id,
+                administrator_id,
+                timestamp,
+                action_type,
+                table_affected,
+                record_id,
+                details
+            ) VALUES (
+                audit_id_seq.NEXTVAL,
+                :old.administrator_id,
+                SYSTIMESTAMP,
+                ''Delete'',
+                ''' || p_table_name || ''',
+                :old.record_id,
+                ''{"action": "Delete"}''
+            );
+        END';
+END setup_audit_triggers;
 
     PROCEDURE simulate_traffic_and_alerts IS
     BEGIN
@@ -544,11 +545,11 @@ SELECT * FROM network_interfaces;
 SELECT * FROM network_logs;
 SELECT * FROM trafic_interfete;
 SELECT * FROM alerte_trafic;
-SELECT * FROM audit_logs;
 
 -- Anonymous PL/SQL block to call the procedure
 BEGIN
     network_management.add_device(
+        p_administrator_id => 1, -- Replace with the actual administrator_id
         p_device_id => 101,
         p_device_name => 'New Device',
         p_device_ip_address => '192.168.1.100',
@@ -562,5 +563,6 @@ BEGIN
 END;
 /
     
--- Set up audit triggers for the network_devices table
-EXEC network_management.setup_audit_triggers(p_table_name => 'network_devices');
+SELECT * FROM USER_TRIGGERS WHERE TABLE_NAME = 'NETWORK_DEVICES';
+SELECT * FROM USER_ERRORS WHERE NAME = 'AUDIT_LOGS_INSERT_TRIGGER';
+SELECT * FROM audit_logs;
