@@ -567,7 +567,7 @@ SELECT * FROM USER_TRIGGERS WHERE TABLE_NAME = 'NETWORK_DEVICES';
 SELECT * FROM USER_ERRORS WHERE NAME = 'AUDIT_LOGS_INSERT_TRIGGER';
 SELECT * FROM audit_logs;
 
---20 logic and complex queries that you can use to demonstrate that the code is working:
+--logic and complex queries that you can use to demonstrate that the code is working:
 
 --List all active devices in the "Server Room" location:
 SELECT * FROM network_devices WHERE status = 'Active' AND location = 'Server Room';
